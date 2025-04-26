@@ -10,6 +10,12 @@ const MODELS_CATALOG = [
         description: "A simple test model."
     },
     {
+        id: "wukong",
+        title: "Wukong",
+        filename: "models/wukong.vox",
+        description: "Journey to the West character Sun Wukong."
+    },
+    {
         id: "camel",
         title: "Camel",
         filename: "models/camel.vox",
