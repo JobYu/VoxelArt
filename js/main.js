@@ -366,6 +366,10 @@ class VoxViewer {
                 // Save current Layer Mode state
                 const wasInLayerMode = this.layerMode;
                 
+                // Before loading new model, clear the current model and all layer meshes
+                this.clearCurrentModel();
+                this.clearLayerMeshes();
+                
                 // Load new model
                 const success = this.loadVoxFile(buffer);
                 loadingIndicator.style.display = 'none';
@@ -386,6 +390,21 @@ class VoxViewer {
                         this.toggleLayerMode(false);
                         // Turn Layer Mode back on and automatically set to first layer
                         this.toggleLayerMode(true);
+                        
+                        // Ensure only the first layer is visible
+                        if (this.layerMeshes && this.layerMeshes.length > 0) {
+                            // Hide all layers
+                            this.layerMeshes.forEach(layer => {
+                                layer.visible = false;
+                            });
+                            
+                            // Show only first layer
+                            this.layerMeshes[0].visible = true;
+                            this.currentLayer = 0;
+                            
+                            // Update layer info
+                            this.updateLayerInfoDisplay();
+                        }
                     }
                     
                     // If set to display grid, apply grid
@@ -442,8 +461,10 @@ class VoxViewer {
     loadVoxFile(buffer) {
         try {
             console.log('Loading VOX file, buffer size:', buffer.byteLength);
-            // Clear wireframe
-            this.removeOverlayWireframe();
+            
+            // Clear any existing model and wireframe before loading new one
+            this.clearCurrentModel();
+            this.clearLayerMeshes();
             
             // Parse the VOX file
             console.log('Parsing VOX file...');
@@ -473,6 +494,10 @@ class VoxViewer {
             console.error('No model data to render');
             return;
         }
+        
+        // Clear any existing model and layers first
+        this.clearCurrentModel();
+        this.clearLayerMeshes();
         
         // Group to hold all model meshes
         const modelGroup = new THREE.Group();
@@ -614,13 +639,36 @@ class VoxViewer {
      * Remove the current model from the scene
      */
     clearCurrentModel() {
+        console.log('Clearing current model and disposing resources');
+        
         // Clear wireframe
         this.removeOverlayWireframe();
         
         // Clear model
         if (this.modelMesh) {
+            // Properly dispose of geometries and materials
+            this.modelMesh.traverse(child => {
+                if (child.geometry) {
+                    child.geometry.dispose();
+                    console.log('Disposed geometry');
+                }
+                if (child.material) {
+                    if (Array.isArray(child.material)) {
+                        child.material.forEach(mat => {
+                            mat.dispose();
+                            console.log('Disposed array material');
+                        });
+                    } else {
+                        child.material.dispose();
+                        console.log('Disposed material');
+                    }
+                }
+            });
+            
+            // Remove from scene
             this.scene.remove(this.modelMesh);
             this.modelMesh = null;
+            console.log('Removed model mesh from scene');
         }
     }
 
@@ -657,8 +705,9 @@ class VoxViewer {
             return;
         }
         
-        // Clear existing layers first
+        // Clear existing layers first - ensure complete cleanup
         this.clearLayerMeshes();
+        console.log("Cleared all existing layer meshes before slicing new layers");
         
         console.log("Slicing model into layers, exterior only:", exteriorOnly);
         
@@ -947,13 +996,31 @@ class VoxViewer {
      * Clear layer meshes
      */
     clearLayerMeshes() {
+        console.log(`Clearing ${this.layerMeshes.length} layer meshes`);
+        
         // Remove all layer meshes from scene
         this.layerMeshes.forEach(mesh => {
             this.scene.remove(mesh);
+            // Dispose geometries and materials to prevent memory leaks
+            if (mesh.children) {
+                mesh.children.forEach(child => {
+                    if (child.geometry) {
+                        child.geometry.dispose();
+                    }
+                    if (child.material) {
+                        if (Array.isArray(child.material)) {
+                            child.material.forEach(mat => mat.dispose());
+                        } else {
+                            child.material.dispose();
+                        }
+                    }
+                });
+            }
         });
         
         // Reset arrays
         this.layerMeshes = [];
+        this.currentLayer = 0;
     }
     
     /**
@@ -970,13 +1037,20 @@ class VoxViewer {
         // Clamp layer index to valid range
         layerIndex = Math.max(0, Math.min(this.layerMeshes.length - 1, layerIndex));
         
-        // Hide all layers first to avoid stacking
-        this.layerMeshes.forEach(layer => {
-            layer.visible = false;
-        });
+        if (isNext) {
+            // When going forward (Next Layer), keep previous layers visible
+            // Just make the new layer visible
+            if (this.layerMeshes[layerIndex]) {
+                this.layerMeshes[layerIndex].visible = true;
+            }
+        } else {
+            // When going backward (Previous Layer), hide the current layer
+            if (this.currentLayer < this.layerMeshes.length) {
+                this.layerMeshes[this.currentLayer].visible = false;
+            }
+        }
         
-        // Show only the current layer
-        this.layerMeshes[layerIndex].visible = true;
+        // Update current layer index
         this.currentLayer = layerIndex;
         
         // Update layer info display
@@ -1031,6 +1105,9 @@ class VoxViewer {
             // Hide the main model
             if (this.modelMesh) this.modelMesh.visible = false;
             
+            // Clear any existing layer meshes first
+            this.clearLayerMeshes();
+            
             // Slice the model and show the first layer
             const exteriorToggle = document.getElementById('exterior-toggle');
             const useExteriorOnly = exteriorToggle?.checked || false;
@@ -1038,7 +1115,8 @@ class VoxViewer {
             
             // Update layer controls
             if (this.layerMeshes && this.layerMeshes.length > 0) {
-                this.updateLayerControls();
+                // Update layer UI controls
+                this.updateLayerControls(Object.keys(this.layerMeshes));
                 
                 // Hide all layers first
                 this.layerMeshes.forEach(layer => {
@@ -1062,8 +1140,8 @@ class VoxViewer {
             // Show the main model
             if (this.modelMesh) this.modelMesh.visible = true;
             
-            // Hide all layers
-            this.resetLayerVisibility();
+            // Clear all layer meshes
+            this.clearLayerMeshes();
         }
         
         // Update wireframe display
@@ -1257,18 +1335,20 @@ class VoxViewer {
             layerIndicator.textContent = `Layer: ${layerIndex + 1}/${this.layerMeshes.length}`;
         }
         
-        // Hide all layers
+        // First, reset visibility - hide all layers
         this.layerMeshes.forEach(layer => {
             layer.visible = false;
         });
         
+        // Then show layers from 0 to the current index (inclusive)
+        for (let i = 0; i <= layerIndex; i++) {
+            if (this.layerMeshes[i]) {
+                this.layerMeshes[i].visible = true;
+            }
+        }
+        
         // Set current layer
         this.currentLayer = layerIndex;
-        
-        // Show only the current layer
-        if (this.layerMeshes[layerIndex]) {
-            this.layerMeshes[layerIndex].visible = true;
-        }
         
         // Render the scene
         this.renderer.render(this.scene, this.camera);
