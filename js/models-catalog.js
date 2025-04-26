@@ -10,13 +10,13 @@ const MODELS_CATALOG = [
         description: "A simple test model."
     },
     {
-        id: "pea",
+        id: "Pea",
         title: "pea",
         filename: "models/pea.vox",
         description: "Plants vs zombies model."
     },
     {
-        id: "sunflower",
+        id: "Sunflower",
         title: "sunflower",
         filename: "models/sunflower.vox",
         description: "Plants vs zombies model."
