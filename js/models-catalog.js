@@ -1,6 +1,6 @@
 /**
- * 模型目录
- * 包含所有可供展示的模型信息
+ * Model Catalog
+ * Contains information for all displayable models
  */
 const MODELS_CATALOG = [
     {
@@ -72,7 +72,7 @@ const MODELS_CATALOG = [
 ];
 
 /**
- * 获取模型信息通过ID
+ * Get model information by ID
  */
 function getModelById(id) {
     return MODELS_CATALOG.find(model => model.id === id);

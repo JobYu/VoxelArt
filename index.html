@@ -102,13 +102,16 @@
             padding: 10px 15px;
             border-radius: 5px;
             display: flex;
+            flex-direction: column;
             gap: 15px;
-            align-items: center;
+            width: 220px;
         }
         .toggle-control {
             display: flex;
             align-items: center;
             cursor: pointer;
+            justify-content: space-between;
+            width: 100%;
         }
         .toggle-switch {
             position: relative;
@@ -116,6 +119,7 @@
             width: 40px;
             height: 20px;
             margin-left: 8px;
+            flex-shrink: 0;
         }
         .toggle-switch input {
             opacity: 0;
@@ -157,6 +161,47 @@
             padding: 6px 0;
             font-size: 0.85rem;
         }
+        .control-group {
+            background-color: rgba(26, 26, 46, 0.8);
+            padding: 10px 15px;
+            border-radius: 5px;
+            margin-bottom: 10px;
+        }
+        .control-title {
+            font-weight: bold;
+            margin-bottom: 8px;
+            text-align: center;
+        }
+        .control-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .control-btn {
+            background-color: #335dff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 6px 12px;
+            cursor: pointer;
+            width: 100%;
+        }
+        .control-btn:hover {
+            background-color: #2749cc;
+        }
+        .info-box {
+            background-color: rgba(26, 26, 46, 0.8);
+            padding: 8px 12px;
+            border-radius: 5px;
+            margin-top: 8px;
+            text-align: center;
+            font-size: 0.9em;
+        }
+        #layer-controls {
+            display: none;
+            flex-direction: column;
+            width: 100%;
+        }
     </style>
 </head>
 <body>
@@ -175,11 +220,42 @@
         </div>
         <div id="view-controls">
             <div class="toggle-control">
-                <span>Show Grid</span>
+                <span style="min-width: 100px;">Show Grid</span>
                 <label class="toggle-switch">
                     <input type="checkbox" id="grid-toggle">
                     <span class="toggle-slider"></span>
                 </label>
+            </div>
+            
+            <div class="toggle-control">
+                <span style="min-width: 100px;">Layer Mode</span>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="layer-toggle">
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+            
+            <div class="toggle-control">
+                <span style="min-width: 100px;">Exterior Only</span>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="exterior-toggle" checked>
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+            
+            <div id="layer-controls" class="control-group">
+                <div class="control-title">Layer Navigation</div>
+                <div class="control-buttons">
+                    <button id="prev-layer" class="control-btn">Previous</button>
+                    <button id="next-layer" class="control-btn">Next</button>
+                </div>
+                <div id="layer-info" class="info-box">Layer: 0/0</div>
+                <div class="layer-tip" style="font-size: 0.85em; margin-top: 8px; text-align: center; color: #b8b8d9;">
+                    Next: Stack layers | Previous: Remove last layer
+                </div>
+                <div style="text-align: center; margin-top: 8px;">
+                    <button id="reset-layers" class="control-btn">Reset</button>
+                </div>
             </div>
         </div>
     </main>
@@ -195,5 +271,17 @@
     <script src="js/vox-parser.js"></script>
     <script src="js/models-catalog.js"></script>
     <script src="js/main.js"></script>
+    <script>
+        // Initialize UI state
+        document.addEventListener('DOMContentLoaded', () => {
+            // Layer toggle handler
+            const layerToggle = document.getElementById('layer-toggle');
+            const layerControls = document.getElementById('layer-controls');
+            
+            layerToggle.addEventListener('change', (event) => {
+                layerControls.style.display = event.target.checked ? 'flex' : 'none';
+            });
+        });
+    </script>
 </body>
 </html> 
