@@ -926,7 +926,7 @@ class VoxViewer {
         // Reset current layer to 0 (first layer)
         this.currentLayer = 0;
         
-        // Show the first layer
+        // Show only the first layer
         if (this.layerMeshes.length > 0) {
             this.layerMeshes[0].visible = true;
         }
@@ -970,14 +970,12 @@ class VoxViewer {
         // Clamp layer index to valid range
         layerIndex = Math.max(0, Math.min(this.layerMeshes.length - 1, layerIndex));
         
-        // If going backwards, hide current layer
-        if (!isNext) {
-            // Hide current layer
-            this.layerMeshes[this.currentLayer].visible = false;
-        }
-        // When going forward, we keep previous layers visible
+        // Hide all layers first to avoid stacking
+        this.layerMeshes.forEach(layer => {
+            layer.visible = false;
+        });
         
-        // Show current layer
+        // Show only the current layer
         this.layerMeshes[layerIndex].visible = true;
         this.currentLayer = layerIndex;
         
@@ -1042,10 +1040,19 @@ class VoxViewer {
             if (this.layerMeshes && this.layerMeshes.length > 0) {
                 this.updateLayerControls();
                 
-                // Show the first layer
+                // Hide all layers first
+                this.layerMeshes.forEach(layer => {
+                    layer.visible = false;
+                });
+                
+                // Show only the first layer
                 if (this.layerMeshes[0]) {
                     this.layerMeshes[0].visible = true;
+                    this.currentLayer = 0;
                 }
+                
+                // Update layer info display
+                this.updateLayerInfoDisplay();
             }
         } else {
             // Disable layer mode
@@ -1063,9 +1070,6 @@ class VoxViewer {
         if (this.wireframeVisible) {
             this.toggleModelWireframe(true);
         }
-        
-        // Update layer info display
-        this.updateLayerInfoDisplay();
     }
     
     /**
@@ -1219,8 +1223,13 @@ class VoxViewer {
     updateLayerControls(layers) {
         if (!layers || layers.length === 0) return;
         
-        // Reset layer display
-        this.resetLayerVisibility();
+        // Reset layer visibility - ensure only first layer is visible
+        this.layerMeshes.forEach((layer, index) => {
+            layer.visible = index === 0;
+        });
+        
+        // Reset current layer to 0
+        this.currentLayer = 0;
         
         // Update layer slider max value
         const layerSlider = document.getElementById('layer-slider');
@@ -1231,6 +1240,9 @@ class VoxViewer {
             // Update layer display for initial value
             this.onLayerSliderChange({target: {value: 0}});
         }
+        
+        // Update layer info display
+        this.updateLayerInfoDisplay();
     }
 
     /**
@@ -1245,7 +1257,7 @@ class VoxViewer {
             layerIndicator.textContent = `Layer: ${layerIndex + 1}/${this.layerMeshes.length}`;
         }
         
-        // Make all layers invisible without changing currentLayer
+        // Hide all layers
         this.layerMeshes.forEach(layer => {
             layer.visible = false;
         });
@@ -1253,7 +1265,7 @@ class VoxViewer {
         // Set current layer
         this.currentLayer = layerIndex;
         
-        // Make the current layer visible
+        // Show only the current layer
         if (this.layerMeshes[layerIndex]) {
             this.layerMeshes[layerIndex].visible = true;
         }
