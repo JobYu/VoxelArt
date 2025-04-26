@@ -25,7 +25,7 @@ class VoxViewer {
         console.log('Setting up Three.js scene...');
         // Create scene
         this.scene = new THREE.Scene();
-        this.scene.background = new THREE.Color(0x222034); // 修改为深色背景 0x222034
+        this.scene.background = new THREE.Color(0x808080); // 修改为灰色背景 0x808080
         
         // Create camera
         this.camera = new THREE.PerspectiveCamera(
