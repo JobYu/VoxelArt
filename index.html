@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>像素熊老师Voxel作品集 | 3D模型展示</title>
+    <link rel="icon" href="data:,">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            font-family: Arial, sans-serif;
+            color: #fff;
+        }
+        header {
+            background-color: #141422;
+            color: white;
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        h1 {
+            margin: 0;
+            font-size: 1.5rem;
+        }
+        main {
+            flex: 1;
+            position: relative;
+            display: flex;
+        }
+        #model-list {
+            width: 250px;
+            background-color: #1a1a2e;
+            padding: 15px;
+            overflow-y: auto;
+        }
+        .model-item {
+            padding: 12px 15px;
+            margin-bottom: 8px;
+            background-color: #222034;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .model-item:hover {
+            background-color: #2d2b4a;
+        }
+        .model-item.active {
+            background-color: #335dff;
+        }
+        #canvas-container {
+            flex: 1;
+            height: 100%;
+        }
+        .loading-indicator {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 5px;
+            display: none;
+        }
+        .model-title {
+            font-weight: bold;
+            font-size: 1.1em;
+            margin-bottom: 5px;
+        }
+        .model-desc {
+            font-size: 0.85em;
+            color: #b8b8d9;
+        }
+        #info-panel {
+            position: absolute;
+            bottom: 20px;
+            left: 285px;
+            background-color: rgba(26, 26, 46, 0.8);
+            padding: 15px;
+            border-radius: 5px;
+            max-width: 500px;
+        }
+        #info-panel h2 {
+            margin-top: 0;
+            margin-bottom: 8px;
+        }
+        .info-desc {
+            margin-bottom: 0;
+            line-height: 1.5;
+        }
+        #view-controls {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background-color: rgba(26, 26, 46, 0.8);
+            padding: 10px 15px;
+            border-radius: 5px;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+        .toggle-control {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+        }
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 40px;
+            height: 20px;
+            margin-left: 8px;
+        }
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #444;
+            transition: .4s;
+            border-radius: 20px;
+        }
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 2px;
+            bottom: 2px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        input:checked + .toggle-slider {
+            background-color: #335dff;
+        }
+        input:checked + .toggle-slider:before {
+            transform: translateX(20px);
+        }
+        footer {
+            background-color: #141422;
+            color: #b8b8d9;
+            text-align: center;
+            padding: 6px 0;
+            font-size: 0.85rem;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>像素熊老师Voxel作品集</h1>
+    </header>
+    <main>
+        <div id="model-list">
+            <!-- 模型列表会被JS动态填充 -->
+        </div>
+        <div id="canvas-container"></div>
+        <div class="loading-indicator">Loading...</div>
+        <div id="info-panel">
+            <h2 id="current-model-title">选择一个模型</h2>
+            <p id="current-model-desc" class="info-desc">从左侧列表选择一个模型进行查看。</p>
+        </div>
+        <div id="view-controls">
+            <div class="toggle-control">
+                <span>显示网格</span>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="grid-toggle">
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+        </div>
+    </main>
+    <footer>
+        &copy; 2025 像素熊老师 - 体素艺术作品集 - 保留所有权利
+    </footer>
+
+    <!-- Load Three.js from CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.137.0/build/three.min.js"></script>
+    <!-- Load OrbitControls for camera manipulation -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.137.0/examples/js/controls/OrbitControls.js"></script>
+    <!-- Our VOX parser and renderer -->
+    <script src="js/vox-parser.js"></script>
+    <script src="js/models-catalog.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html> 
