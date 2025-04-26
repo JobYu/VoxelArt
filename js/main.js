@@ -274,7 +274,7 @@ class VoxViewer {
                 
                 if (!success) {
                     console.error('Failed to parse or render the model');
-                    alert(`无法加载模型 "${modelInfo.title}"。请检查控制台获取详细信息。`);
+                    alert(`Unable to load model "${modelInfo.title}". Please check the console for details.`);
                 } else {
                     console.log('Model loaded and rendered successfully');
                     
@@ -290,14 +290,14 @@ class VoxViewer {
             .catch(error => {
                 loadingIndicator.style.display = 'none';
                 console.error('Error loading model:', error);
-                alert(`加载模型时出错: ${error.message}`);
+                alert(`Error loading model: ${error.message}`);
             });
             
         return true;
     }
 
     /**
-     * 更新信息面板显示当前模型信息
+     * Update the information panel with the current model info
      */
     updateInfoPanel(modelInfo) {
         const titleElement = document.getElementById('current-model-title');
@@ -307,8 +307,8 @@ class VoxViewer {
             titleElement.textContent = modelInfo.title;
             descElement.textContent = modelInfo.description;
         } else {
-            titleElement.textContent = '未选择模型';
-            descElement.textContent = '从左侧列表选择一个模型进行查看。';
+            titleElement.textContent = 'No Model Selected';
+            descElement.textContent = 'Select a model from the list on the left to view it.';
         }
     }
 
