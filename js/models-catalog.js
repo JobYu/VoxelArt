@@ -11,19 +11,19 @@ const MODELS_CATALOG = [
     },
     {
         id: "pea",
-        title: "plants vs zombies",
+        title: "pea",
         filename: "models/pea.vox",
         description: "Plants vs zombies model."
     },
     {
         id: "sunflower",
-        title: "plants vs zombies",
+        title: "sunflower",
         filename: "models/sunflower.vox",
         description: "Plants vs zombies model."
     },
     {
         id: "plant",
-        title: "plants vs zombies",
+        title: "Scaredy-shroom",
         filename: "models/plant.vox",
         description: "Plants vs zombies model."
     },
