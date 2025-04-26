@@ -10,6 +10,12 @@ const MODELS_CATALOG = [
         description: "A simple test model."
     },
     {
+        id: "bajie",
+        title: "Bajie",
+        filename: "models/bajie.vox",
+        description: "Journey to the West character Zhu Bajie."
+    },
+    {
         id: "puff-shroom",
         title: "puff-shroom",
         filename: "models/puff-shroom.vox",
