@@ -1,3 +1,76 @@
+# Voxel Art Gallery
+
+An elegant Three.js-based voxel model viewer application for showcasing MagicaVoxel .vox format artwork. Specially designed for Pixel Bear Teacher's voxel art collection.
+
+## Features
+
+- Beautiful UI interface for showcasing voxel art works
+- Model list for easily switching between different works
+- Grid display feature to clearly show the boundaries of each voxel
+- 3D navigation to view models from any angle
+- Optimized performance with instanced rendering for complex models
+
+## How to Use
+
+1. Start the application via an HTTP server (as shown below)
+2. Select a model from the list on the left
+3. Use mouse/touch for navigation:
+   - Left-click and drag to rotate the model
+   - Right-click and drag to pan the view
+   - Scroll wheel to zoom
+4. Use the toggle switch in the top right to show/hide grid lines
+
+## Running the Application
+
+Start a simple HTTP server to serve the files:
+
+```bash
+# Using Python 3 (recommended)
+python -m http.server
+
+# Using Node.js and npx
+npx serve
+```
+
+Then access in your browser: `http://localhost:8000`
+
+## Adding New Models
+
+1. Place your .vox model files in the `models/` directory
+2. Add model information in `js/models-catalog.js`, in the following format:
+   ```js
+   {
+     id: "my-model",
+     title: "My Model",
+     filename: "models/my-model.vox",
+     description: "This is my custom model description"
+   }
+   ```
+
+## Technical Details
+
+- **Rendering Engine**: Three.js for high-quality 3D rendering
+- **Model Loading**: Built-in VOX file format parser, supporting MagicaVoxel specifications
+- **Performance Optimization**: Instanced rendering technology for significantly improved voxel model performance
+- **Visual Effects**: Support for voxel transparency and custom palettes
+- **Grid Display**: Using EdgesGeometry and LineSegments for precise voxel boundary lines
+
+## Customization Options
+
+- Adjustable UI styles, background colors, and lighting settings
+- Support for additional descriptive information and metadata
+- Extensible to support more features, such as animation, screenshots, etc.
+
+## Author Information
+
+Designed and maintained by Pixel Bear Teacher to showcase personal voxel artwork.
+
+## License
+
+© 2025 Pixel Bear Teacher
+
+---
+
 # 像素熊老师Voxel作品集
 
 一个优雅的基于Three.js的体素模型展示应用，用于展示MagicaVoxel .vox格式的体素模型作品。专为像素熊老师的作品集设计。
@@ -67,4 +140,4 @@ npx serve
 
 ## 许可证
 
-© 2025 像素熊老师 - 保留所有权利 
+© 2025 像素熊老师
