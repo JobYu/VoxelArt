@@ -10,6 +10,12 @@ const MODELS_CATALOG = [
         description: "A simple test model."
     },
     {
+        id: "plant",
+        title: "plants vs zombies",
+        filename: "models/plant.vox",
+        description: "Plants vs zombies model."
+    },
+    {
         id: "king",
         title: "King",
         filename: "models/king.vox",
