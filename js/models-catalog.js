@@ -10,7 +10,7 @@ const MODELS_CATALOG = [
         description: "A simple test model."
     },
     {
-        id: "red_bird",
+        id: "red",
         title: "Red Bird",
         filename: "models/red.vox",
         description: "A red bird model."
