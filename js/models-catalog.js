@@ -6,25 +6,25 @@ const MODELS_CATALOG = [
     {
         id: "test",
         title: "Test Model",
-        filename: "test.vox",
+        filename: "models/test.vox",
         description: "A simple test model to verify the system's functionality."
     },
     {
         id: "puff-shroom",
-        title: "小喷菇",
+        title: "puff-shroom",
         filename: "models/puff-shroom.vox",
-        description: "别名喷射蘑菇、炮灰菇，益智策略类塔防御战游戏《植物大战僵尸》系列中的角色。"
+        description: "Also known as Puff-shroom or Cannon Fodder Mushroom, a character from the tower defense strategy game series 'Plants vs. Zombies'."
     },
     {
         id: "angry_yellow",
-        title: "Angry Yellow Bird",
-        filename: "angry_yellow.vox",
-        description: "An angry yellow bird model with distinctive facial expressions and a sleek design style."
+        title: "Angry Bird Yellow ",
+        filename: "models/angry_yellow.vox",
+        description: "An angry bird yellow model with distinctive facial expressions and a sleek design style."
     },
     {
         id: "angry_pig_xmas",
         title: "Christmas Angry Pig",
-        filename: "angry_pig_Xmas.vox",
+        filename: "models/angry_pig_Xmas.vox",
         description: "A Christmas-themed angry pig character, combining holiday elements with a cute voxel style."
     }
 ];
