@@ -10,18 +10,6 @@ const MODELS_CATALOG = [
         description: "A simple test model."
     },
     {
-        id: "Pea",
-        title: "pea",
-        filename: "models/pea.vox",
-        description: "Plants vs zombies model."
-    },
-    {
-        id: "Sunflower",
-        title: "sunflower",
-        filename: "models/sunflower.vox",
-        description: "Plants vs zombies model."
-    },
-    {
         id: "plant",
         title: "Scaredy-shroom",
         filename: "models/plant.vox",
@@ -58,22 +46,10 @@ const MODELS_CATALOG = [
         description: "A red bird model."
     },
     {
-        id: "wukong",
-        title: "Wukong",
-        filename: "models/wukong.vox",
-        description: "Journey to the West character Sun Wukong."
-    },
-    {
         id: "camel",
         title: "Camel",
         filename: "models/camel.vox",
         description: "A camel model."
-    },
-    {
-        id: "bajie",
-        title: "Bajie",
-        filename: "models/bajie.vox",
-        description: "Journey to the West character Zhu Bajie."
     },
     {
         id: "puff-shroom",
