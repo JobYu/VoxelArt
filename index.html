@@ -2,9 +2,10 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Pixel Bear Teacher's Voxel Gallery | 3D Model Display</title>
     <link rel="icon" href="data:,">
+    <script src="js/device-detector.js"></script>
     <style>
         body {
             margin: 0;
@@ -23,6 +24,7 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            z-index: 10;
         }
         h1 {
             margin: 0;
@@ -38,6 +40,7 @@
             background-color: #1a1a2e;
             padding: 15px;
             overflow-y: auto;
+            transition: transform 0.3s ease;
         }
         .model-item {
             padding: 12px 15px;
@@ -85,6 +88,7 @@
             padding: 15px;
             border-radius: 5px;
             max-width: 500px;
+            transition: all 0.3s ease;
         }
         #info-panel h2 {
             margin-top: 0;
@@ -105,6 +109,7 @@
             flex-direction: column;
             gap: 15px;
             width: 220px;
+            transition: all 0.3s ease;
         }
         .toggle-control {
             display: flex;
@@ -160,6 +165,7 @@
             text-align: center;
             padding: 6px 0;
             font-size: 0.85rem;
+            z-index: 10;
         }
         .control-group {
             background-color: rgba(26, 26, 46, 0.8);
@@ -202,10 +208,164 @@
             flex-direction: column;
             width: 100%;
         }
+
+        /* Mobile Menu Button */
+        #mobile-menu-button {
+            display: none;
+            background: none;
+            border: none;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+
+        /* Control Buttons for Mobile */
+        #mobile-controls {
+            display: none;
+            position: fixed;
+            bottom: 20px;
+            width: 100%;
+            z-index: 1000;
+            text-align: center;
+        }
+
+        #mobile-controls .btn-group {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        #mobile-controls button {
+            background-color: rgba(26, 26, 46, 0.9);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Mobile-specific styles */
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 1.2rem;
+            }
+
+            #mobile-menu-button {
+                display: block;
+            }
+
+            main {
+                flex-direction: column;
+            }
+
+            #model-list {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 80%;
+                height: 100%;
+                z-index: 1000;
+                transform: translateX(-100%);
+                box-shadow: 2px 0 5px rgba(0, 0, 0, 0.3);
+            }
+
+            #model-list.open {
+                transform: translateX(0);
+            }
+
+            #info-panel {
+                position: fixed;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                max-width: none;
+                border-radius: 10px 10px 0 0;
+                padding: 10px;
+                transform: translateY(70%);
+                transition: transform 0.3s ease;
+            }
+
+            #info-panel.open {
+                transform: translateY(0);
+            }
+
+            #info-toggle {
+                position: absolute;
+                top: -15px;
+                left: 50%;
+                transform: translateX(-50%);
+                width: 30px;
+                height: 5px;
+                background-color: #b8b8d9;
+                border-radius: 5px;
+            }
+
+            #view-controls {
+                position: fixed;
+                top: 70px;
+                right: 0;
+                transform: translateX(100%);
+                width: 180px;
+                z-index: 900;
+            }
+
+            #view-controls.open {
+                transform: translateX(0);
+            }
+
+            #mobile-controls {
+                display: block;
+            }
+
+            .overlay {
+                display: none;
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background-color: rgba(0, 0, 0, 0.5);
+                z-index: 999;
+            }
+
+            .overlay.active {
+                display: block;
+            }
+        }
+
+        /* iPad-specific styles */
+        @media (min-width: 769px) and (max-width: 1024px) {
+            #model-list {
+                width: 200px;
+                padding: 10px;
+            }
+
+            #info-panel {
+                left: 225px;
+                max-width: 400px;
+            }
+
+            #view-controls {
+                width: 200px;
+            }
+        }
+
+        .toggle-control.hidden {
+            display: none;
+        }
     </style>
 </head>
 <body>
+    <div class="overlay" id="menu-overlay"></div>
     <header>
+        <button id="mobile-menu-button">☰</button>
         <h1>Pixel Bear Teacher's Voxel Gallery</h1>
     </header>
     <main>
@@ -215,6 +375,7 @@
         <div id="canvas-container"></div>
         <div class="loading-indicator">Loading...</div>
         <div id="info-panel">
+            <div id="info-toggle"></div>
             <h2 id="current-model-title">Select a Model</h2>
             <p id="current-model-desc" class="info-desc">Choose a model from the list on the left to view it.</p>
         </div>
@@ -235,10 +396,10 @@
                 </label>
             </div>
             
-            <div class="toggle-control">
+            <div class="toggle-control hidden">
                 <span style="min-width: 100px;">Exterior Only</span>
                 <label class="toggle-switch">
-                    <input type="checkbox" id="exterior-toggle">
+                    <input type="checkbox" id="exterior-toggle" checked>
                     <span class="toggle-slider"></span>
                 </label>
             </div>
@@ -248,40 +409,31 @@
                 <div class="control-buttons">
                     <button id="prev-layer" class="control-btn">Previous</button>
                     <button id="next-layer" class="control-btn">Next</button>
+                    <button id="reset-layer" class="control-btn">Reset</button>
                 </div>
-                <div id="layer-info" class="info-box">Layer: 0/0</div>
-                <div class="layer-tip" style="font-size: 0.85em; margin-top: 8px; text-align: center; color: #b8b8d9;">
-                    Next: Stack layers | Previous: Remove last layer
-                </div>
-                <div style="text-align: center; margin-top: 8px;">
-                    <button id="reset-layers" class="control-btn">Reset</button>
-                </div>
+                <div id="layer-info" class="info-box">Layer: 1/1</div>
+            </div>
+        </div>
+
+        <!-- Mobile Controls -->
+        <div id="mobile-controls">
+            <div class="btn-group">
+                <button id="mobile-models-btn">📋</button>
+                <button id="mobile-settings-btn">⚙️</button>
+                <button id="mobile-info-btn">ℹ️</button>
             </div>
         </div>
     </main>
     <footer>
-        &copy; 2025 Pixel Bear Teacher - Voxel Art Gallery - All Rights Reserved
+        © 2025 Pixel Bear Teacher - Voxel Art Gallery
     </footer>
 
-    <!-- Load Three.js from CDN -->
-    <script src="https://cdn.jsdelivr.net/npm/three@0.137.0/build/three.min.js"></script>
-    <!-- Load OrbitControls for camera manipulation -->
-    <script src="https://cdn.jsdelivr.net/npm/three@0.137.0/examples/js/controls/OrbitControls.js"></script>
-    <!-- Our VOX parser and renderer -->
+    <!-- Load JavaScript -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.min.js"></script>
     <script src="js/vox-parser.js"></script>
     <script src="js/models-catalog.js"></script>
     <script src="js/main.js"></script>
-    <script>
-        // Initialize UI state
-        document.addEventListener('DOMContentLoaded', () => {
-            // Layer toggle handler
-            const layerToggle = document.getElementById('layer-toggle');
-            const layerControls = document.getElementById('layer-controls');
-            
-            layerToggle.addEventListener('change', (event) => {
-                layerControls.style.display = event.target.checked ? 'flex' : 'none';
-            });
-        });
-    </script>
+    <script src="js/mobile.js"></script>
 </body>
 </html> 

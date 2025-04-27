@@ -20,8 +20,20 @@ class VoxViewer {
         this.maxLayer = 0; // Maximum number of layers
         this.layerMode = false; // Whether in layer mode
         this.layerMeshes = []; // Meshes for each layer
+        this.useExteriorOnly = true; // Default to show only exterior voxels
+        
+        // Touch handling properties
+        this.isMobile = this.detectMobile();
         
         this.init();
+    }
+
+    /**
+     * Detect if running on mobile device
+     */
+    detectMobile() {
+        return (window.innerWidth <= 768) || 
+               (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent));
     }
 
     /**
@@ -55,6 +67,18 @@ class VoxViewer {
             this.controls = new THREE.OrbitControls(this.camera, this.renderer.domElement);
             this.controls.enableDamping = true;
             this.controls.dampingFactor = 0.25;
+            
+            // Adjust controls for mobile
+            if (this.isMobile) {
+                this.controls.rotateSpeed = 0.5;
+                this.controls.zoomSpeed = 1.2;
+                this.controls.screenSpacePanning = true;
+                this.controls.touches = {
+                    ONE: THREE.TOUCH.ROTATE,
+                    TWO: THREE.TOUCH.DOLLY_PAN
+                };
+            }
+            
             console.log('OrbitControls initialized successfully');
         } catch (error) {
             console.error('Error initializing OrbitControls:', error);
@@ -114,9 +138,12 @@ class VoxViewer {
      * Handle window resize
      */
     onResize() {
-        this.camera.aspect = this.container.clientWidth / this.container.clientHeight;
+        const width = this.container.clientWidth;
+        const height = this.container.clientHeight;
+        
+        this.camera.aspect = width / height;
         this.camera.updateProjectionMatrix();
-        this.renderer.setSize(this.container.clientWidth, this.container.clientHeight);
+        this.renderer.setSize(width, height);
     }
 
     /**
@@ -349,76 +376,160 @@ class VoxViewer {
         const loadingIndicator = document.querySelector('.loading-indicator');
         loadingIndicator.style.display = 'block';
         
-        console.log(`Loading model from catalog: ${modelInfo.title} (${modelInfo.filename})`);
+        // Ensure the filename has proper path and caching prevention
+        const filename = modelInfo.filename;
+        console.log(`Loading model from catalog: ${modelInfo.title} (${filename})`);
         
-        // Load model file from server
-        fetch(modelInfo.filename)
-            .then(response => {
-                console.log('Fetch response:', response.status, response.statusText);
-                if (!response.ok) {
-                    throw new Error(`HTTP error! Status: ${response.status}`);
-                }
-                return response.arrayBuffer();
+        // Add a timestamp to prevent caching issues
+        const fileUrl = `${filename}?t=${Date.now()}`;
+        
+        // First try to load using fetch API
+        this.loadModelWithFetch(fileUrl)
+            .catch(fetchError => {
+                console.warn('Fetch loading failed, trying XMLHttpRequest as fallback:', fetchError);
+                // If fetch fails, try XMLHttpRequest as fallback
+                return this.loadModelWithXHR(fileUrl);
             })
-            .then(buffer => {
-                console.log('Loaded buffer, size:', buffer.byteLength);
-                
-                // Save current Layer Mode state
-                const wasInLayerMode = this.layerMode;
-                
-                // Before loading new model, clear the current model and all layer meshes
-                this.clearCurrentModel();
-                this.clearLayerMeshes();
-                
-                // Load new model
-                const success = this.loadVoxFile(buffer);
-                loadingIndicator.style.display = 'none';
-                
-                if (!success) {
-                    console.error('Failed to parse or render the model');
-                    alert(`Unable to load model "${modelInfo.title}". Please check the console for details.`);
-                } else {
-                    console.log('Model loaded and rendered successfully');
-                    
-                    // Highlight the currently selected model
-                    this.highlightSelectedModel(modelId);
-                    
-                    // If currently in Layer Mode, reapply Layer Mode and reset layers
-                    if (wasInLayerMode) {
-                        console.log('Reapplying Layer Mode and resetting layers for new model');
-                        // First turn off Layer Mode to clean old data
-                        this.toggleLayerMode(false);
-                        // Turn Layer Mode back on and automatically set to first layer
-                        this.toggleLayerMode(true);
-                        
-                        // Ensure only the first layer is visible
-                        if (this.layerMeshes && this.layerMeshes.length > 0) {
-                            // Hide all layers
-                            this.layerMeshes.forEach(layer => {
-                                layer.visible = false;
-                            });
-                            
-                            // Show only first layer
-                            this.layerMeshes[0].visible = true;
-                            this.currentLayer = 0;
-                            
-                            // Update layer info
-                            this.updateLayerInfoDisplay();
-                        }
-                    }
-                    
-                    // If set to display grid, apply grid
-                    if (this.wireframeVisible) {
-                        this.toggleModelWireframe(true);
-                    }
-                }
-            })
+            .then(buffer => this.processModelBuffer(buffer, modelInfo, modelId))
             .catch(error => {
                 loadingIndicator.style.display = 'none';
                 console.error('Error loading model:', error);
-                alert(`Error loading model: ${error.message}`);
+                
+                let errorMessage = error.message;
+                
+                // Provide more helpful error messages
+                if (error.message === 'Failed to fetch' || error.message.includes('NetworkError')) {
+                    errorMessage = 'Network error: Could not load the model file. This might be caused by CORS restrictions or the file not being accessible. Make sure you\'re running from a local server.';
+                    console.error('Attempted to load file from:', fileUrl);
+                    console.error('Current origin:', window.location.origin);
+                    console.error('Try accessing this URL directly in your browser to check if the file is accessible.');
+                } else if (error.message.includes('HTTP error')) {
+                    errorMessage = `${error.message}. The model file could not be found or accessed.`;
+                } else if (error.message.includes('empty buffer')) {
+                    errorMessage = 'Received empty data from server. The model file might be corrupted or inaccessible.';
+                }
+                
+                alert(`Error loading model: ${errorMessage}`);
             });
             
+        return true;
+    }
+    
+    /**
+     * Load model file using fetch API
+     */
+    loadModelWithFetch(fileUrl) {
+        return fetch(fileUrl, {
+            method: 'GET',
+            cache: 'no-cache',
+        })
+        .then(response => {
+            console.log('Fetch response:', response.status, response.statusText);
+            if (!response.ok) {
+                throw new Error(`HTTP error! Status: ${response.status}`);
+            }
+            return response.arrayBuffer();
+        })
+        .then(buffer => {
+            console.log('Loaded buffer with fetch, size:', buffer.byteLength);
+            
+            if (buffer.byteLength === 0) {
+                throw new Error('Received empty buffer from server');
+            }
+            
+            return buffer;
+        });
+    }
+    
+    /**
+     * Load model file using XMLHttpRequest (fallback method)
+     */
+    loadModelWithXHR(fileUrl) {
+        return new Promise((resolve, reject) => {
+            const xhr = new XMLHttpRequest();
+            xhr.open('GET', fileUrl, true);
+            xhr.responseType = 'arraybuffer';
+            
+            xhr.onload = function() {
+                if (xhr.status === 200) {
+                    console.log('Loaded buffer with XHR, size:', xhr.response.byteLength);
+                    if (xhr.response.byteLength === 0) {
+                        reject(new Error('Received empty buffer from server'));
+                    } else {
+                        resolve(xhr.response);
+                    }
+                } else {
+                    reject(new Error(`HTTP error! Status: ${xhr.status}`));
+                }
+            };
+            
+            xhr.onerror = function() {
+                reject(new Error('XHR request failed'));
+            };
+            
+            xhr.send();
+        });
+    }
+    
+    /**
+     * Process the loaded model buffer
+     */
+    processModelBuffer(buffer, modelInfo, modelId) {
+        console.log('Processing model buffer, size:', buffer.byteLength);
+        
+        // Hide loading indicator
+        const loadingIndicator = document.querySelector('.loading-indicator');
+        
+        // Save current Layer Mode state
+        const wasInLayerMode = this.layerMode;
+        
+        // Before loading new model, clear the current model and all layer meshes
+        this.clearCurrentModel();
+        this.clearLayerMeshes();
+        
+        // Load new model
+        const success = this.loadVoxFile(buffer);
+        loadingIndicator.style.display = 'none';
+        
+        if (!success) {
+            console.error('Failed to parse or render the model');
+            throw new Error(`Unable to load model "${modelInfo.title}". Please check the console for details.`);
+        }
+        
+        console.log('Model loaded and rendered successfully');
+        
+        // Highlight the currently selected model
+        this.highlightSelectedModel(modelId);
+        
+        // If currently in Layer Mode, reapply Layer Mode and reset layers
+        if (wasInLayerMode) {
+            console.log('Reapplying Layer Mode and resetting layers for new model');
+            // First turn off Layer Mode to clean old data
+            this.toggleLayerMode(false);
+            // Turn Layer Mode back on and automatically set to first layer
+            this.toggleLayerMode(true);
+            
+            // Ensure only the first layer is visible
+            if (this.layerMeshes && this.layerMeshes.length > 0) {
+                // Hide all layers
+                this.layerMeshes.forEach(layer => {
+                    layer.visible = false;
+                });
+                
+                // Show only first layer
+                this.layerMeshes[0].visible = true;
+                this.currentLayer = 0;
+                
+                // Update layer info
+                this.updateLayerInfoDisplay();
+            }
+        }
+        
+        // If set to display grid, apply grid
+        if (this.wireframeVisible) {
+            this.toggleModelWireframe(true);
+        }
+        
         return true;
     }
 
@@ -449,7 +560,7 @@ class VoxViewer {
         });
         
         // Add highlighting to the currently selected model
-        const selectedItem = document.querySelector(`.model-item[data-id="${modelId}"]`);
+        const selectedItem = document.querySelector(`.model-item[data-model-id="${modelId}"]`);
         if (selectedItem) {
             selectedItem.classList.add('active');
         }
@@ -460,7 +571,14 @@ class VoxViewer {
      */
     loadVoxFile(buffer) {
         try {
+            if (!buffer || buffer.byteLength === 0) {
+                console.error('Empty buffer received');
+                return false;
+            }
+            
             console.log('Loading VOX file, buffer size:', buffer.byteLength);
+            console.log('Buffer type:', Object.prototype.toString.call(buffer));
+            console.log('First few bytes:', new Uint8Array(buffer).slice(0, 10));
             
             // Clear any existing model and wireframe before loading new one
             this.clearCurrentModel();
@@ -468,18 +586,29 @@ class VoxViewer {
             
             // Parse the VOX file
             console.log('Parsing VOX file...');
-            this.currentModel = this.voxParser.parse(buffer);
-            console.log('Model parsed successfully:', this.currentModel);
-            
-            // Render the model
-            console.log('Rendering model...');
-            this.renderModel(this.currentModel);
-            
-            // Adjust camera position based on model size
-            this.focusCameraOnModel();
-            console.log('Model loaded and displayed successfully');
-            
-            return true;
+            try {
+                this.currentModel = this.voxParser.parse(buffer);
+                console.log('Model parsed successfully:', this.currentModel);
+                
+                // Verify model data
+                if (!this.currentModel || !this.currentModel.models || this.currentModel.models.length === 0) {
+                    console.error('Parser returned empty model data');
+                    return false;
+                }
+                
+                // Render the model
+                console.log('Rendering model...');
+                this.renderModel(this.currentModel);
+                
+                // Adjust camera position based on model size
+                this.focusCameraOnModel();
+                console.log('Model loaded and displayed successfully');
+                
+                return true;
+            } catch (parseError) {
+                console.error('Error parsing VOX file:', parseError);
+                return false;
+            }
         } catch (error) {
             console.error('Error loading VOX file:', error);
             return false;
@@ -680,19 +809,20 @@ class VoxViewer {
             return;
         }
         
-        // Calculate the maximum size of the model
+        // 计算模型的最大尺寸
         let maxSize = 0;
         this.currentModel.models.forEach(model => {
             maxSize = Math.max(maxSize, model.size.x, model.size.y, model.size.z);
         });
         
-        // Set camera position based on model size
+        // 基础距离
         const distance = maxSize * 2;
-        this.camera.position.set(distance, distance, distance);
-        this.camera.lookAt(0, 0, 0);
         
-        // Update controls
+        // 设置相机位置 - 现在设置面板在底部，不再需要特别向下偏移
+        this.camera.position.set(distance, distance, distance);
         this.controls.target.set(0, 0, 0);
+        
+        this.camera.lookAt(this.controls.target);
         this.controls.update();
     }
 
@@ -1109,9 +1239,7 @@ class VoxViewer {
             this.clearLayerMeshes();
             
             // Slice the model and show the first layer
-            const exteriorToggle = document.getElementById('exterior-toggle');
-            const useExteriorOnly = exteriorToggle?.checked || false;
-            this.sliceModelIntoLayers(useExteriorOnly);
+            this.sliceModelIntoLayers(this.useExteriorOnly);
             
             // Update layer controls
             if (this.layerMeshes && this.layerMeshes.length > 0) {
@@ -1359,116 +1487,113 @@ class VoxViewer {
  * Create model list UI
  */
 function createModelList(container, viewer) {
-    // Add each model to the list
+    console.log('Creating model list...');
+    
+    // Clear container
+    container.innerHTML = '';
+    
+    // Create model items
     MODELS_CATALOG.forEach(model => {
         const modelItem = document.createElement('div');
         modelItem.className = 'model-item';
-        modelItem.dataset.id = model.id;
+        modelItem.dataset.modelId = model.id;
         
-        const title = document.createElement('div');
-        title.className = 'model-title';
-        title.textContent = model.title;
+        const modelTitle = document.createElement('div');
+        modelTitle.className = 'model-title';
+        modelTitle.textContent = model.title;
         
-        const desc = document.createElement('div');
-        desc.className = 'model-desc';
-        desc.textContent = model.description;
+        const modelDesc = document.createElement('div');
+        modelDesc.className = 'model-desc';
+        modelDesc.textContent = model.description;
         
-        modelItem.appendChild(title);
-        modelItem.appendChild(desc);
+        modelItem.appendChild(modelTitle);
+        modelItem.appendChild(modelDesc);
         
-        // Add click event
+        // Handle click to load model
         modelItem.addEventListener('click', () => {
             viewer.loadCatalogModel(model.id);
+            viewer.highlightSelectedModel(model.id);
+            
+            // Close model list on mobile after selection
+            if (viewer.isMobile) {
+                document.getElementById('model-list').classList.remove('open');
+                document.getElementById('menu-overlay').classList.remove('active');
+            }
         });
         
-        // Insert into container
         container.appendChild(modelItem);
     });
 }
 
 /**
- * Application initialization
+ * Initialize the application
  */
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('DOM loaded, initializing viewer...');
-    const container = document.getElementById('canvas-container');
-    const viewer = new VoxViewer(container);
+    console.log('DOM loaded, initializing application...');
     
-    // Create model list
+    // Get containers
+    const canvasContainer = document.getElementById('canvas-container');
     const modelListContainer = document.getElementById('model-list');
+    
+    // Create viewer
+    const viewer = new VoxViewer(canvasContainer);
+    
+    // Make viewer globally accessible for mobile.js
+    window.viewer = viewer;
+    
+    // Populate model list
     createModelList(modelListContainer, viewer);
     
-    // Set grid display toggle
+    // Set up toggle handlers
     const gridToggle = document.getElementById('grid-toggle');
+    const layerToggle = document.getElementById('layer-toggle');
+    const exteriorToggle = document.getElementById('exterior-toggle');
+    
+    // Ensure exterior toggle is checked by default
+    exteriorToggle.checked = true;
+    
+    // Grid toggle
     gridToggle.addEventListener('change', (event) => {
         viewer.toggleModelWireframe(event.target.checked);
     });
     
     // Layer mode toggle
-    const layerToggle = document.getElementById('layer-toggle');
-    if (layerToggle) {
-        layerToggle.addEventListener('change', (event) => {
-            viewer.toggleLayerMode(event.target.checked);
-        });
-    }
+    layerToggle.addEventListener('change', (event) => {
+        viewer.toggleLayerMode(event.target.checked);
+    });
     
     // Exterior only toggle
-    const exteriorToggle = document.getElementById('exterior-toggle');
-    if (exteriorToggle) {
-        exteriorToggle.addEventListener('change', (event) => {
-            // If currently in Layer Mode, reapply to update exterior voxel display
-            if (viewer.layerMode) {
-                // Save current Layer state
-                const currentLayer = viewer.currentLayer;
-                const visibleLayers = viewer.layerMeshes.map(layer => layer.visible);
-                
-                // Regenerate Layers
-                viewer.toggleLayerMode(false);
-                viewer.toggleLayerMode(true);
-                
-                // Restore Layer display state
-                // Note: Since the filtered exterior voxels may differ from the original,
-                // the number of layers might change
-                // So we take the minimum of both to avoid index out of bounds
-                const minLayers = Math.min(visibleLayers.length, viewer.layerMeshes.length);
-                for (let i = 0; i < minLayers; i++) {
-                    if (visibleLayers[i]) {
-                        viewer.layerMeshes[i].visible = true;
-                    }
-                }
-                
-                // Update layer information display
-                viewer.updateLayerInfoDisplay();
-            }
-        });
-    }
+    exteriorToggle.addEventListener('change', (event) => {
+        // 更新视图对象的useExteriorOnly属性
+        viewer.useExteriorOnly = event.target.checked;
+        
+        if (viewer.layerMode) {
+            // Re-slice model with new exterior setting
+            viewer.sliceModelIntoLayers(event.target.checked);
+        }
+    });
     
     // Layer navigation buttons
     const prevLayerBtn = document.getElementById('prev-layer');
-    if (prevLayerBtn) {
-        prevLayerBtn.addEventListener('click', () => {
-            viewer.prevLayer();
-        });
-    }
-    
     const nextLayerBtn = document.getElementById('next-layer');
-    if (nextLayerBtn) {
-        nextLayerBtn.addEventListener('click', () => {
-            viewer.nextLayer();
-        });
-    }
+    const resetLayerBtn = document.getElementById('reset-layer');
     
-    const resetLayersBtn = document.getElementById('reset-layers');
-    if (resetLayersBtn) {
-        resetLayersBtn.addEventListener('click', () => {
-            viewer.resetLayerVisibility();
-            // Force render update
-            viewer.renderer.render(viewer.scene, viewer.camera);
-        });
-    }
+    prevLayerBtn.addEventListener('click', () => {
+        viewer.prevLayer();
+    });
     
-    // Load the first model by default
+    nextLayerBtn.addEventListener('click', () => {
+        viewer.nextLayer();
+    });
+    
+    resetLayerBtn.addEventListener('click', () => {
+        viewer.setCurrentLayer(0);
+    });
+    
+    // Load a default model if available
     if (MODELS_CATALOG.length > 0) {
-        viewer.loadCatalogModel(MODELS_CATALOG[0].id);
+        const defaultModel = MODELS_CATALOG[0];
+        viewer.loadCatalogModel(defaultModel.id);
+        viewer.highlightSelectedModel(defaultModel.id);
     }
 }); 

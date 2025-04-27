@@ -5,29 +5,49 @@ An elegant Three.js-based voxel model viewer application for showcasing MagicaVo
 ## Features
 
 - Beautiful UI interface for showcasing voxel art works
-- Model list for easily switching between different works
+- Model list for easily switching between different works (with scrolling support on mobile)
 - Grid display feature to clearly show the boundaries of each voxel
 - Layer mode for exploring models layer by layer
-- Exterior-only mode for improved visibility of model structure
-- 3D navigation to view models from any angle
+- **Optimized Mobile View**: Dedicated interface for smaller screens with bottom navigation and panel layout.
+- **Exterior Only Mode (Default)**: Improves visibility of model structure by simplifying interior voxels (always active, toggle hidden).
+- 3D navigation to view models from any angle (touch controls optimized for mobile)
 - Optimized performance with instanced rendering for complex models
 
 ## How to Use
 
+### Desktop View
+
 1. Start the application via an HTTP server (as shown below)
 2. Select a model from the list on the left
-3. Use mouse/touch for navigation:
+3. Use mouse for navigation:
    - Left-click and drag to rotate the model
    - Right-click and drag to pan the view
    - Scroll wheel to zoom
-4. Use the toggle switches in the top right to control view options:
+4. Use the toggle switches in the top right panel to control view options:
    - **Show Grid**: Toggle grid lines for better voxel boundary visibility
-   - **Layer Mode**: Enable layer-by-layer viewing with navigation controls
-   - **Exterior Only**: Show only exterior voxels for better structure visibility
+   - **Layer Mode**: Enable layer-by-layer viewing with navigation controls (appears when Layer Mode is active)
+
+### Mobile View
+
+1. Start the application via an HTTP server
+2. Use the bottom navigation buttons:
+   - **📋 (List Icon)**: Open/close the scrollable model list panel on the left.
+   - **⚙️ (Settings Icon)**: Open/close the settings panel at the bottom.
+   - **ℹ️ (Info Icon)**: Open/close the model information panel at the bottom.
+3. Select a model from the list panel.
+4. Use touch gestures for navigation:
+   - One finger drag to rotate the model
+   - Two finger pinch/spread to zoom
+   - Two finger drag to pan
+5. Use the toggle switches in the bottom settings panel:
+   - **Show Grid**: Toggle grid lines.
+   - **Layer Mode**: Enable layer-by-layer viewing.
+
+_(Note: Exterior Only mode is enabled by default and its toggle is hidden to save space)_
 
 ## Layer Navigation
 
-When Layer Mode is enabled:
+When Layer Mode is enabled (Desktop or Mobile Settings Panel):
 - Use the **Next** button to add layers from bottom to top
 - Use the **Previous** button to remove layers from top to bottom
 - Use the **Reset** button to return to the first layer
@@ -101,29 +121,49 @@ Designed and maintained by Pixel Bear Teacher to showcase personal voxel artwork
 ## 功能
 
 - 精美的UI界面，展示体素艺术作品
-- 模型列表，便于切换展示不同的作品
+- 模型列表，便于切换展示不同的作品 (移动端支持滚动)
 - 网格显示功能，清晰展示每个体素的边界
 - 分层模式，可以逐层探索模型结构
-- 仅显示外部体素模式，提高模型结构可视性
-- 3D导航，可以任意角度查看模型
+- **优化移动视图**: 为小屏幕设计的专属界面，包含底部导航和面板布局。
+- **仅显示外部模式 (默认)**: 通过简化内部体素提高模型结构可视性 (始终启用，开关已隐藏)。
+- 3D导航，可以任意角度查看模型 (移动端优化触摸控制)
 - 优化的性能，使用实例化渲染支持复杂模型
 
 ## 使用方法
 
+### 桌面视图
+
 1. 通过HTTP服务器启动应用（如下所示）
 2. 从左侧模型列表中选择一个模型进行查看
-3. 使用鼠标/触摸进行导航：
+3. 使用鼠标进行导航：
    - 左键点击并拖动旋转模型
    - 右键点击并拖动平移视图
    - 滚轮缩放
-4. 使用右上角的开关控制查看选项：
+4. 使用右上角面板中的开关控制查看选项：
    - **显示网格**：切换网格线以更好地显示体素边界
-   - **分层模式**：启用逐层查看功能，附带导航控制
-   - **仅显示外部**：只显示外部体素，提高结构可视性
+   - **分层模式**：启用逐层查看功能，附带导航控制 (仅在分层模式激活时显示)
+
+### 移动视图
+
+1. 通过HTTP服务器启动应用
+2. 使用底部导航按钮:
+   - **📋 (列表图标)**: 打开/关闭左侧可滚动的模型列表面板。
+   - **⚙️ (设置图标)**: 打开/关闭底部的设置面板。
+   - **ℹ️ (信息图标)**: 打开/关闭底部的模型信息面板。
+3. 从列表面板中选择一个模型。
+4. 使用触摸手势进行导航:
+   - 单指拖动旋转模型
+   - 双指捏合/张开缩放
+   - 双指拖动平移
+5. 使用底部设置面板中的开关:
+   - **显示网格**: 切换网格线。
+   - **分层模式**: 启用逐层查看功能。
+
+_(注意: 仅显示外部模式已默认启用，其开关被隐藏以节省空间)_
 
 ## 分层导航
 
-启用分层模式后：
+启用分层模式后 (桌面视图或移动端设置面板):
 - 使用**下一层**按钮从底部向顶部添加层
 - 使用**上一层**按钮从顶部向底部移除层
 - 使用**重置**按钮返回到第一层

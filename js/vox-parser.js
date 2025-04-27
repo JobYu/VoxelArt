@@ -13,148 +13,248 @@ class VoxParser {
      * @returns {Object} The parsed voxel model
      */
     parse(buffer) {
+        console.log('Starting VOX file parsing...');
+        
+        if (!buffer || !(buffer instanceof ArrayBuffer)) {
+            console.error('Invalid buffer provided:', buffer);
+            throw new Error('Invalid buffer: expected ArrayBuffer');
+        }
+        
+        if (buffer.byteLength < 8) {
+            console.error('Buffer too small:', buffer.byteLength, 'bytes');
+            throw new Error('Buffer too small to be a valid VOX file');
+        }
+        
         const dataView = new DataView(buffer);
         let offset = 0;
 
-        // Check VOX header
-        const header = this._readString(dataView, offset, 4);
-        offset += 4;
-        
-        if (header !== 'VOX ') {
-            throw new Error(`Invalid VOX file: header should be 'VOX ' but was '${header}'`);
-        }
-
-        // Check version number
-        const version = dataView.getUint32(offset, true);
-        offset += 4;
-        
-        if (version !== 150) {
-            console.warn(`VOX version is ${version}, expected 150. The file may not parse correctly.`);
-        }
-
-        // Read MAIN chunk
-        const mainId = this._readString(dataView, offset, 4);
-        offset += 4;
-        
-        if (mainId !== 'MAIN') {
-            throw new Error(`Expected MAIN chunk, but found '${mainId}'`);
-        }
-
-        // Skip MAIN chunk content size
-        const mainContentSize = dataView.getUint32(offset, true);
-        offset += 4;
-        
-        // Read MAIN children size
-        const mainChildrenSize = dataView.getUint32(offset, true);
-        offset += 4;
-
-        // Initialize data structure for the model
-        const voxelData = {
-            version: version,
-            models: [],
-            palette: this.defaultPalette,
-        };
-
-        // Temporary storage for model data before it is associated with size
-        let currentSize = null;
-
-        // Read all chunks in MAIN
-        const endOffset = offset + mainChildrenSize;
-        while (offset < endOffset) {
-            const chunkId = this._readString(dataView, offset, 4);
+        try {
+            // Check VOX header
+            const header = this._readString(dataView, offset, 4);
             offset += 4;
-            const chunkContentSize = dataView.getUint32(offset, true);
-            offset += 4;
-            const chunkChildrenSize = dataView.getUint32(offset, true);
-            offset += 4;
-
-            switch (chunkId) {
-                case 'PACK':
-                    // Number of models
-                    const numModels = dataView.getUint32(offset, true);
-                    voxelData.numModels = numModels;
-                    break;
-
-                case 'SIZE':
-                    // Model size
-                    const sizeX = dataView.getUint32(offset, true);
-                    const sizeY = dataView.getUint32(offset + 4, true);
-                    const sizeZ = dataView.getUint32(offset + 8, true);
-                    
-                    currentSize = { x: sizeX, y: sizeY, z: sizeZ };
-                    break;
-
-                case 'XYZI':
-                    // Model voxels
-                    if (!currentSize) {
-                        throw new Error('Found XYZI chunk before SIZE chunk');
-                    }
-                    
-                    const numVoxels = dataView.getUint32(offset, true);
-                    const voxels = [];
-                    
-                    for (let i = 0; i < numVoxels; i++) {
-                        const voxelOffset = offset + 4 + (i * 4);
-                        const x = dataView.getUint8(voxelOffset);
-                        const y = dataView.getUint8(voxelOffset + 1);
-                        const z = dataView.getUint8(voxelOffset + 2);
-                        const colorIndex = dataView.getUint8(voxelOffset + 3);
-                        
-                        voxels.push({
-                            x, y, z, colorIndex
-                        });
-                    }
-                    
-                    voxelData.models.push({
-                        size: currentSize,
-                        voxels: voxels
-                    });
-                    
-                    currentSize = null;
-                    break;
-
-                case 'RGBA':
-                    // Custom palette
-                    const palette = [];
-                    
-                    // Add a transparent color as the first entry (index 0)
-                    palette.push({ r: 0, g: 0, b: 0, a: 0 });
-                    
-                    // Read 255 palette entries
-                    for (let i = 0; i < 255; i++) {
-                        const colorOffset = offset + (i * 4);
-                        const r = dataView.getUint8(colorOffset);
-                        const g = dataView.getUint8(colorOffset + 1);
-                        const b = dataView.getUint8(colorOffset + 2);
-                        const a = dataView.getUint8(colorOffset + 3);
-                        
-                        palette.push({ r, g, b, a });
-                    }
-                    
-                    voxelData.palette = palette;
-                    break;
-
-                default:
-                    // Skip unknown chunk
-                    console.warn(`Skipping unknown chunk type: ${chunkId}`);
+            
+            console.log('VOX header:', header);
+            
+            if (header !== 'VOX ') {
+                console.error('Invalid VOX header:', header);
+                throw new Error(`Invalid VOX file: header should be 'VOX ' but was '${header}'`);
             }
-
-            // Move to next chunk
-            offset += chunkContentSize + chunkChildrenSize;
+    
+            // Check version number
+            const version = dataView.getUint32(offset, true);
+            offset += 4;
+            
+            console.log('VOX version:', version);
+            
+            if (version !== 150) {
+                console.warn(`VOX version is ${version}, expected 150. The file may not parse correctly.`);
+            }
+    
+            // Read MAIN chunk
+            const mainId = this._readString(dataView, offset, 4);
+            offset += 4;
+            
+            console.log('Main chunk ID:', mainId);
+            
+            if (mainId !== 'MAIN') {
+                console.error('Expected MAIN chunk, found:', mainId);
+                throw new Error(`Expected MAIN chunk, but found '${mainId}'`);
+            }
+    
+            // Skip MAIN chunk content size
+            const mainContentSize = dataView.getUint32(offset, true);
+            offset += 4;
+            
+            // Read MAIN children size
+            const mainChildrenSize = dataView.getUint32(offset, true);
+            offset += 4;
+            
+            console.log('MAIN content size:', mainContentSize, 'children size:', mainChildrenSize);
+    
+            // Initialize data structure for the model
+            const voxelData = {
+                version: version,
+                models: [],
+                palette: this.defaultPalette,
+            };
+    
+            // Temporary storage for model data before it is associated with size
+            let currentSize = null;
+    
+            // Read all chunks in MAIN
+            console.log('Starting chunk parsing...');
+            const endOffset = offset + mainChildrenSize;
+            
+            if (endOffset > buffer.byteLength) {
+                console.error('Invalid MAIN chunk size exceeds buffer length');
+                throw new Error('Invalid chunk size: data would extend beyond buffer');
+            }
+            
+            while (offset < endOffset) {
+                if (offset + 12 > buffer.byteLength) {
+                    console.error('Unable to read chunk header, offset:', offset, 'buffer size:', buffer.byteLength);
+                    break;
+                }
+                
+                const chunkId = this._readString(dataView, offset, 4);
+                offset += 4;
+                const chunkContentSize = dataView.getUint32(offset, true);
+                offset += 4;
+                const chunkChildrenSize = dataView.getUint32(offset, true);
+                offset += 4;
+                
+                console.log('Found chunk:', chunkId, 'content size:', chunkContentSize, 'children size:', chunkChildrenSize);
+                
+                // Check if we have enough data to read the chunk
+                if (offset + chunkContentSize > buffer.byteLength) {
+                    console.error('Chunk extends beyond buffer:', chunkId);
+                    break;
+                }
+    
+                try {
+                    switch (chunkId) {
+                        case 'PACK':
+                            // Number of models
+                            const numModels = dataView.getUint32(offset, true);
+                            voxelData.numModels = numModels;
+                            console.log('PACK: Number of models:', numModels);
+                            break;
+        
+                        case 'SIZE':
+                            // Model size
+                            if (chunkContentSize < 12) {
+                                console.error('SIZE chunk too small:', chunkContentSize);
+                                break;
+                            }
+                            
+                            const sizeX = dataView.getUint32(offset, true);
+                            const sizeY = dataView.getUint32(offset + 4, true);
+                            const sizeZ = dataView.getUint32(offset + 8, true);
+                            
+                            console.log('SIZE:', sizeX, sizeY, sizeZ);
+                            
+                            currentSize = { x: sizeX, y: sizeY, z: sizeZ };
+                            break;
+        
+                        case 'XYZI':
+                            // Model voxels
+                            if (!currentSize) {
+                                console.error('Found XYZI chunk before SIZE chunk');
+                                throw new Error('Found XYZI chunk before SIZE chunk');
+                            }
+                            
+                            if (chunkContentSize < 4) {
+                                console.error('XYZI chunk too small:', chunkContentSize);
+                                break;
+                            }
+                            
+                            const numVoxels = dataView.getUint32(offset, true);
+                            const voxels = [];
+                            
+                            console.log('XYZI: Number of voxels:', numVoxels);
+                            
+                            // Verify we have enough data for all voxels
+                            if (4 + (numVoxels * 4) > chunkContentSize) {
+                                console.error('XYZI chunk too small for declared voxel count');
+                                break;
+                            }
+                            
+                            for (let i = 0; i < numVoxels; i++) {
+                                const voxelOffset = offset + 4 + (i * 4);
+                                
+                                if (voxelOffset + 4 > buffer.byteLength) {
+                                    console.error('Voxel data extends beyond buffer');
+                                    break;
+                                }
+                                
+                                const x = dataView.getUint8(voxelOffset);
+                                const y = dataView.getUint8(voxelOffset + 1);
+                                const z = dataView.getUint8(voxelOffset + 2);
+                                const colorIndex = dataView.getUint8(voxelOffset + 3);
+                                
+                                voxels.push({
+                                    x, y, z, colorIndex
+                                });
+                            }
+                            
+                            voxelData.models.push({
+                                size: currentSize,
+                                voxels: voxels
+                            });
+                            
+                            console.log('Added model with', voxels.length, 'voxels');
+                            
+                            currentSize = null;
+                            break;
+        
+                        case 'RGBA':
+                            // Custom palette
+                            if (chunkContentSize < 1024) { // 256 * 4 bytes
+                                console.error('RGBA chunk too small:', chunkContentSize);
+                                break;
+                            }
+                            
+                            const palette = [];
+                            
+                            // Add a transparent color as the first entry (index 0)
+                            palette.push({ r: 0, g: 0, b: 0, a: 0 });
+                            
+                            // Read 255 palette entries
+                            for (let i = 0; i < 255; i++) {
+                                const colorOffset = offset + (i * 4);
+                                const r = dataView.getUint8(colorOffset);
+                                const g = dataView.getUint8(colorOffset + 1);
+                                const b = dataView.getUint8(colorOffset + 2);
+                                const a = dataView.getUint8(colorOffset + 3);
+                                
+                                palette.push({ r, g, b, a });
+                            }
+                            
+                            voxelData.palette = palette;
+                            console.log('Loaded custom palette with 256 colors');
+                            break;
+        
+                        default:
+                            // Skip unknown chunk
+                            console.warn(`Skipping unknown chunk type: ${chunkId}`);
+                    }
+                } catch (chunkError) {
+                    console.error('Error processing chunk', chunkId, ':', chunkError);
+                }
+    
+                // Move to next chunk
+                offset += chunkContentSize + chunkChildrenSize;
+            }
+            
+            console.log('Completed parsing VOX file.', 
+                'Models:', voxelData.models.length, 
+                'Total voxels:', voxelData.models.reduce((sum, model) => sum + model.voxels.length, 0));
+    
+            return voxelData;
+        } catch (error) {
+            console.error('Error parsing VOX file:', error);
+            throw error;
         }
-
-        return voxelData;
     }
 
     /**
      * Read a string from a DataView
      */
     _readString(dataView, offset, length) {
-        let str = '';
-        for (let i = 0; i < length; i++) {
-            str += String.fromCharCode(dataView.getUint8(offset + i));
+        try {
+            let str = '';
+            for (let i = 0; i < length; i++) {
+                if (offset + i >= dataView.byteLength) {
+                    console.error('String read beyond end of buffer');
+                    return str; // Return what we have so far
+                }
+                str += String.fromCharCode(dataView.getUint8(offset + i));
+            }
+            return str;
+        } catch (error) {
+            console.error('Error reading string at offset', offset, ':', error);
+            return '';
         }
-        return str;
     }
 
     /**
